@@ -117,8 +117,8 @@ if analyze_button_ui and ticker_symbol_input:
 
                 with st.expander("자세한 회사 소개 (영문)", expanded=False):
                     business_summary = info.get('longBusinessSummary', '제공된 정보 없음.')
-                    if business_summary == '제공된 정보 없음.':
-                         st.info(business_summary)
+                    if not business_summary or business_summary == '제공된 정보 없음.': # None 또는 빈 문자열도 고려
+                         st.info('제공된 회사 소개 정보가 없습니다.')
                     else:
                         st.markdown(f"<div style='height:200px;overflow-y:scroll;padding:10px;border:1px solid #e6e6e6;'>{business_summary}</div>", unsafe_allow_html=True)
                 st.markdown("---")
@@ -154,8 +154,8 @@ if analyze_button_ui and ticker_symbol_input:
                 # 거래량은 secondary y-axis에 추가
                 fig.add_trace(go.Bar(x=hist_data_ta.index, y=hist_data_ta['Volume'], name='거래량', marker_color='rgba(180,180,200,0.5)'), secondary_y=True, row=1, col=1)
                 fig.update_layout(
-                    yaxis1_title="가격 (USD)", # 첫 번째 y축 (가격)
-                    yaxis2=dict(title='거래량', overlaying='y', side='right', showgrid=False, range=[0, hist_data_ta['Volume'].max()*3.5]) # 두 번째 y축 (거래량)
+                    yaxis1_title="가격 (USD)", 
+                    yaxis2=dict(title='거래량', overlaying='y', side='right', showgrid=False, range=[0, hist_data_ta['Volume'].max()*3.5]) 
                 )
 
 
@@ -188,7 +188,6 @@ if analyze_button_ui and ticker_symbol_input:
                     legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="right", x=1),
                     margin=dict(l=20, r=20, t=30, b=20) 
                 )
-                # 각 subplot의 y축 타이틀 설정은 위에서 fig.update_layout(yaxis2=...)와 fig.update_yaxes(...)로 처리
                 
                 st.plotly_chart(fig, use_container_width=True)
                 st.markdown("---")
@@ -201,8 +200,19 @@ if analyze_button_ui and ticker_symbol_input:
                     if df is None or df.empty:
                         return None
                     df_processed = df.iloc[:, :min(4, df.shape[1])].copy()
-                    # 컬럼명을 YYYY 형태로 변경 (Timestamp 객체일 경우)
-                    df_processed.columns = [col.strftime('%Y') if isinstance(col, pd.Timestamp) else str(col).split(' ')[0].split('-')[0] for col in df_processed.columns] # 날짜 형식의 문자열도 연도만 추출
+                    # 컬럼명을 YYYY 형태로 변경 (Timestamp 객체일 경우 또는 YYYY-MM-DD 형식의 문자열)
+                    new_columns = []
+                    for col in df_processed.columns:
+                        if isinstance(col, pd.Timestamp):
+                            new_columns.append(col.strftime('%Y'))
+                        elif isinstance(col, str) and '-' in col:
+                             try:
+                                new_columns.append(pd.to_datetime(col).strftime('%Y'))
+                             except ValueError:
+                                new_columns.append(str(col).split('-')[0]) # Fallback for non-standard date strings
+                        else:
+                            new_columns.append(str(col))
+                    df_processed.columns = new_columns
                     return df_processed.style.format("{:,.0f}", na_rep="-")
 
                 with tab1:
@@ -238,9 +248,10 @@ if analyze_button_ui and ticker_symbol_input:
                         st.write(f"현재 PER (TTM): **{current_pe_raw:.2f}**")
                         st.write(f"현재 EPS (TTM): **${eps_current_raw:.2f}**")
                         
+                        assumed_pe_default = round(float(current_pe_raw),1)
                         assumed_pe = st.number_input("적용할 목표 PER:", 
-                                                     value=round(float(current_pe_raw),1), 
-                                                     min_value=1.0, max_value=200.0, step=0.1, key="target_pe_input_val_final", 
+                                                     value=assumed_pe_default, 
+                                                     min_value=1.0, max_value=200.0, step=0.1, key="target_pe_input_val_final_v2", 
                                                      format="%.1f")
                         estimated_price_pe = eps_current_raw * assumed_pe
                         st.success(f"➡️ 목표 PER 적용 시 참고 주가: **${estimated_price_pe:.2f}**")
@@ -261,9 +272,10 @@ if analyze_button_ui and ticker_symbol_input:
                         if book_value_per_share_calc and isinstance(book_value_per_share_calc, (int,float)):
                             st.write(f"계산된 BPS (주당순자산): **${book_value_per_share_calc:.2f}**")
                         
+                        assumed_pbr_default = round(float(current_pbr_raw),1) if book_value_per_share_calc else 1.0 # BPS 없으면 PBR 1로 가정
                         assumed_pbr = st.number_input("적용할 목표 PBR:",
-                                                      value=round(float(current_pbr_raw),1),
-                                                      min_value=0.1, max_value=50.0, step=0.1, key="target_pbr_input_val_final", 
+                                                      value=assumed_pbr_default,
+                                                      min_value=0.1, max_value=50.0, step=0.1, key="target_pbr_input_val_final_v2", 
                                                       format="%.1f")
                         if book_value_per_share_calc and isinstance(book_value_per_share_calc, (int,float)):
                             estimated_price_pbr = book_value_per_share_calc * assumed_pbr
