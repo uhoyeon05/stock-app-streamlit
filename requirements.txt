@@ -1,8 +1,1 @@
-streamlit>=1.28.0 # Streamlit 최신 버전 권장
-yfinance>=0.2.30 # yfinance 최신 버전 권장
-pandas==2.0.3   # pandas 버전 명시
-numpy==1.24.4   # numpy 버전 명시 (pandas 2.0.x와 호환)
-plotly>=5.15.0  # Plotly 최신 버전 권장
-requests>=2.28.0 # requests 최신 버전 권장
-pandas-ta==0.3.14b0 # pandas-ta의 널리 사용되는 안정 버전
-setuptools>=42
+streamlit>=1.28.0
