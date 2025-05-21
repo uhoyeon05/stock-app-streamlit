@@ -1,9 +1,8 @@
 streamlit>=1.33.0
 yfinance>=0.2.38
 pandas>=2.2.2
-numpy>=2.0.0  # NumPy 2.0 이상을 명시적으로 요구 (NaN -> nan 변경 대응)
+numpy>=2.0.0
 plotly>=5.18.0
 requests>=2.31.0
-pandas-ta     # 버전을 명시하지 않아 최신 호환 버전 설치 유도
 setuptools>=60.0.0
 wheel
