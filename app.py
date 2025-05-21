@@ -117,15 +117,16 @@ st.markdown("---")
 
 if analyze_button_ui and ticker_symbol_input: # 들여쓰기 레벨 0
     with st.spinner(f"{ticker_symbol_input} 데이터를 가져오고 분석하는 중입니다... 잠시만 기다려주세요..."): # 들여쓰기 레벨 1
-        try: # 들여쓰기 레벨 2
-            hist_data_raw, info, financials, balance_sheet, cashflow = get_stock_data(ticker_symbol_input, selected_period_selectbox) # 들여쓰기 레벨 3
+        try: # 들여쓰기 레벨 2 (이 try 블록과 아래 except 블록은 같은 레벨이어야 합니다)
+            hist_data_raw, info, financials, balance_sheet, cashflow = get_stock_data(ticker_symbol_input, selected_period_selectbox)
 
-            if info is None or not info:  # 들여쓰기 레벨 3
-                st.error(f"'{ticker_symbol_input}'에 대한 회사 정보를 가져올 수 없습니다. 티커를 확인해주세요.") # 들여쓰기 레벨 4
-            elif hist_data_raw.empty: # 들여쓰기 레벨 3
-                st.error(f"'{ticker_symbol_input}'에 대한 주가 데이터를 가져올 수 없습니다. 티커를 확인해주세요.") # 들여쓰기 레벨 4
-            else: # 들여쓰기 레벨 3 (모든 주요 로직은 이 else 블록 안에 있어야 함)
-                st.subheader(f"🏢 {info.get('longName', ticker_symbol_input)} ( {ticker_symbol_input} ) 회사 개요") # 들여쓰기 레벨 4
+            if info is None or not info: 
+                st.error(f"'{ticker_symbol_input}'에 대한 회사 정보를 가져올 수 없습니다. 티커를 확인해주세요.")
+            elif hist_data_raw.empty:
+                st.error(f"'{ticker_symbol_input}'에 대한 주가 데이터를 가져올 수 없습니다. 티커를 확인해주세요.")
+            else:
+                # 회사 정보 표시
+                st.subheader(f"🏢 {info.get('longName', ticker_symbol_input)} ( {ticker_symbol_input} ) 회사 개요")
                 
                 sum_col1, sum_col2 = st.columns([0.7, 0.3]) 
                 with sum_col1:
@@ -172,21 +173,28 @@ if analyze_button_ui and ticker_symbol_input: # 들여쓰기 레벨 0
                 st.subheader("📈 주가 및 기술적 지표")
                 
                 fig = make_subplots(rows=3, cols=1, shared_xaxes=True, 
-                                    vertical_spacing=0.04, row_heights=[0.55, 0.2, 0.25]) 
+                                    vertical_spacing=0.04, row_heights=[0.55, 0.2, 0.25],
+                                    specs=[[{"secondary_y": True}],  # 첫 번째 행 subplot에만 secondary_y 적용
+                                           [{"secondary_y": False}],
+                                           [{"secondary_y": False}]])
 
                 fig.add_trace(go.Candlestick(x=hist_data_ta.index,
                                             open=hist_data_ta['Open'], high=hist_data_ta['High'],
                                             low=hist_data_ta['Low'], close=hist_data_ta['Close'],
-                                            name='캔들스틱'), row=1, col=1)
+                                            name='캔들스틱'), secondary_y=False, row=1, col=1)
                 if show_sma_checkbox_ui: 
                     if f'SMA_{sma_short_window_slider_ui}' in hist_data_ta.columns:
                         fig.add_trace(go.Scatter(x=hist_data_ta.index, y=hist_data_ta[f'SMA_{sma_short_window_slider_ui}'], 
-                                                mode='lines', name=f'SMA {sma_short_window_slider_ui}', line=dict(color='orange')), row=1, col=1)
+                                                mode='lines', name=f'SMA {sma_short_window_slider_ui}', line=dict(color='orange')), 
+                                                secondary_y=False, row=1, col=1)
                     if f'SMA_{sma_long_window_slider_ui}' in hist_data_ta.columns:
                         fig.add_trace(go.Scatter(x=hist_data_ta.index, y=hist_data_ta[f'SMA_{sma_long_window_slider_ui}'], 
-                                                mode='lines', name=f'SMA {sma_long_window_slider_ui}', line=dict(color='purple')), row=1, col=1)
+                                                mode='lines', name=f'SMA {sma_long_window_slider_ui}', line=dict(color='purple')), 
+                                                secondary_y=False, row=1, col=1)
                 
-                fig.add_trace(go.Bar(x=hist_data_ta.index, y=hist_data_ta['Volume'], name='거래량', marker_color='rgba(180,180,200,0.5)'), secondary_y=True, row=1, col=1)
+                fig.add_trace(go.Bar(x=hist_data_ta.index, y=hist_data_ta['Volume'], name='거래량', 
+                                     marker_color='rgba(180,180,200,0.5)'), 
+                                     secondary_y=True, row=1, col=1)
                 
                 fig.update_layout(
                     yaxis1_title="가격 (USD)", 
@@ -278,7 +286,7 @@ if analyze_button_ui and ticker_symbol_input: # 들여쓰기 레벨 0
                         assumed_pe_default_val = round(float(current_pe_raw_val),1)
                         assumed_pe_val = st.number_input("적용할 목표 PER:", 
                                                      value=assumed_pe_default_val, 
-                                                     min_value=0.1, max_value=200.0, step=0.1, key="target_pe_input_final_v5_1", 
+                                                     min_value=0.1, max_value=200.0, step=0.1, key="target_pe_input_final_v6", # 키 변경
                                                      format="%.1f")
                         if assumed_pe_val > 0:
                             estimated_price_pe_val = eps_current_raw_val * assumed_pe_val
@@ -303,7 +311,7 @@ if analyze_button_ui and ticker_symbol_input: # 들여쓰기 레벨 0
                         assumed_pbr_default_val = round(float(current_pbr_raw_val),1) if book_value_per_share_calc_val and isinstance(current_pbr_raw_val, (int,float)) and current_pbr_raw_val > 0 else 1.0
                         assumed_pbr_val = st.number_input("적용할 목표 PBR:",
                                                       value=assumed_pbr_default_val,
-                                                      min_value=0.1, max_value=50.0, step=0.1, key="target_pbr_input_final_v5_2", 
+                                                      min_value=0.1, max_value=50.0, step=0.1, key="target_pbr_input_final_v6", # 키 변경
                                                       format="%.1f")
                         if book_value_per_share_calc_val and isinstance(book_value_per_share_calc_val, (int,float)) and assumed_pbr_val > 0:
                             estimated_price_pbr_val = book_value_per_share_calc_val * assumed_pbr_val
@@ -314,15 +322,15 @@ if analyze_button_ui and ticker_symbol_input: # 들여쓰기 레벨 0
                         st.warning("PBR 정보가 유효하지 않거나 부족합니다.")
 
                 st.info("💡 위 평가는 매우 단순화된 참고용이며, 실제 투자 결정에 사용되어서는 안 됩니다. DCF, RIM 등 더 정교한 모델과 종합적인 분석이 필요합니다. 이 부분은 향후 앱 기능 확장을 통해 개선될 수 있습니다.")
-        # 이 except 블록은 위의 try 블록과 정확히 같은 들여쓰기 수준 (레벨 1)에 있어야 합니다.
+        # 여기서부터 except 블록의 들여쓰기가 try와 같아야 합니다.
         except Exception as e: 
             st.error(f"'{ticker_symbol_input}' 데이터 처리 중 예상치 못한 오류가 발생했습니다: {str(e)}")
             st.error("인터넷 연결을 확인하거나, 티커 심볼이 정확한지 다시 한번 확인해주세요. (예: 미국 주식 AAPL, MSFT, GOOGL)")
             st.error("문제가 지속되면 잠시 후 다시 시도해주세요. (데이터 제공처의 일시적인 제한일 수 있습니다.)")
 
-elif analyze_button_ui and not ticker_symbol_input: # 이 elif는 맨 처음 if와 같은 들여쓰기 레벨 (레벨 0)
+elif analyze_button_ui and not ticker_symbol_input: 
     st.warning("⚠️ 분석할 종목 티커를 사이드바에 입력해주세요.")
-else: # 이 else도 맨 처음 if와 같은 들여쓰기 레벨 (레벨 0)
+else: 
     st.info("👈 사이드바에서 분석할 미국 주식의 티커를 입력하고 '분석 시작!' 버튼을 눌러주세요. 예시 티커: AAPL, MSFT, GOOGL, NVDA, TSLA 등")
 
 # --- 앱 정보 및 면책 조항 ---
