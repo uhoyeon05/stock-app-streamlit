@@ -4,5 +4,5 @@ pandas>=2.2.0
 numpy>=1.26.0   
 plotly>=5.18.0  
 requests>=2.31.0 
-pandas-ta>=0.3.14b0 
+pandas-ta # 버전을 특정하지 않거나, pandas-ta>=0.3.14b (이전 b0를 빼고 시도)
 setuptools>=60.0.0
