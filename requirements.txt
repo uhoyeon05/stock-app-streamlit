@@ -1,9 +1,9 @@
 streamlit>=1.33.0
 yfinance>=0.2.38
-pandas==2.1.4    # numpy 1.26.x 와 호환성 좋은 pandas 버전
-numpy==1.26.4    # Python 3.12+ 에서 distutils 문제 없는 비교적 최신 1.x 계열 numpy
+pandas>=2.2.2
+numpy>=2.0.0  # NumPy 2.0 이상을 명시적으로 요구 (NaN -> nan 변경 대응)
 plotly>=5.18.0
 requests>=2.31.0
-pandas-ta==0.3.14b0
+pandas-ta     # 버전을 명시하지 않아 최신 호환 버전 설치 유도
 setuptools>=60.0.0
-wheel # numpy 빌드 시 필요할 수 있음
+wheel
