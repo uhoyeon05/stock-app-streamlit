@@ -1,8 +1,8 @@
 streamlit>=1.33.0
 yfinance>=0.2.38
-pandas>=2.2.0
-numpy>=1.26.0
+pandas==2.0.3       # 이 버전은 numpy 1.24.x 와 호환성이 좋았습니다.
+numpy~=1.24.4       # numpy 버전을 1.24.x 버전대로 고정 (1.24.4 또는 유사한 1.24대의 안정버전)
 plotly>=5.18.0
 requests>=2.31.0
-pandas-ta
+pandas-ta==0.3.14b0 # 이 버전이 NaN을 직접 import 하므로, 호환되는 numpy 필요
 setuptools>=60.0.0
