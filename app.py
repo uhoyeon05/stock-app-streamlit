@@ -24,28 +24,27 @@ def get_stock_data(ticker_symbol, period="1y"):
 # --- 직접 계산하는 기술적 지표 함수 ---
 def calculate_sma(series, window):
     """단순 이동평균선 계산"""
-    if series is None or window <= 0 or len(series) < window: 
+    if series is None or len(series) < window or window <= 0:
         return pd.Series(dtype='float64', index=series.index if series is not None else None)
     return series.rolling(window=window, min_periods=1).mean()
 
 def calculate_rsi(series, window=14):
     """RSI 계산"""
-    if series is None or window <= 0 or len(series) < window + 1: 
+    if series is None or len(series) < window + 1 or window <= 0:
         return pd.Series(dtype='float64', index=series.index if series is not None else None)
     delta = series.diff()
-    gain = (delta.where(delta > 0, 0.0)).rolling(window=window, min_periods=1).mean() 
-    loss = (-delta.where(delta < 0, 0.0)).rolling(window=window, min_periods=1).mean() 
+    gain = (delta.where(delta > 0, 0.0)).rolling(window=window, min_periods=1).mean()
+    loss = (-delta.where(delta < 0, 0.0)).rolling(window=window, min_periods=1).mean()
     
     rs = gain / loss
     rsi = 100.0 - (100.0 / (1.0 + rs))
-    # inf 값 (loss가 0일 때) 및 NaN 값 (gain, loss 모두 0일 때 또는 초기값) 처리
     rsi = rsi.replace([np.inf, -np.inf], 100.0) 
     rsi = rsi.fillna(50) 
     return rsi
 
 def calculate_macd(series, fast_period=12, slow_period=26, signal_period=9):
     """MACD, MACD Signal, MACD Histogram 계산"""
-    if series is None or fast_period <= 0 or slow_period <= 0 or signal_period <= 0 or slow_period <= fast_period or len(series) < slow_period:
+    if series is None or len(series) < slow_period or fast_period <= 0 or slow_period <= 0 or signal_period <= 0 or slow_period <= fast_period:
         return pd.DataFrame(columns=[f'MACD_{fast_period}_{slow_period}_{signal_period}', 
                                      f'MACDs_{fast_period}_{slow_period}_{signal_period}', 
                                      f'MACDh_{fast_period}_{slow_period}_{signal_period}'],
@@ -125,7 +124,7 @@ if analyze_button_ui and ticker_symbol_input: # 들여쓰기 레벨 0
                 st.error(f"'{ticker_symbol_input}'에 대한 회사 정보를 가져올 수 없습니다. 티커를 확인해주세요.") # 들여쓰기 레벨 4
             elif hist_data_raw.empty: # 들여쓰기 레벨 3
                 st.error(f"'{ticker_symbol_input}'에 대한 주가 데이터를 가져올 수 없습니다. 티커를 확인해주세요.") # 들여쓰기 레벨 4
-            else: # 들여쓰기 레벨 3
+            else: # 들여쓰기 레벨 3 (모든 주요 로직은 이 else 블록 안에 있어야 함)
                 st.subheader(f"🏢 {info.get('longName', ticker_symbol_input)} ( {ticker_symbol_input} ) 회사 개요") # 들여쓰기 레벨 4
                 
                 sum_col1, sum_col2 = st.columns([0.7, 0.3]) 
@@ -208,9 +207,9 @@ if analyze_button_ui and ticker_symbol_input: # 들여쓰기 레벨 0
                 if show_macd_checkbox_ui and macd_line_col in hist_data_ta.columns:
                     fig.add_trace(go.Scatter(x=hist_data_ta.index, y=hist_data_ta[macd_line_col], mode='lines', name='MACD', line=dict(color='blue')), row=3, col=1)
                     if macd_signal_col in hist_data_ta.columns:
-                        fig.add_trace(go.Scatter(x=hist_data_ta.index, y=hist_data_ta[macd_signal_col], mode='lines', name='Signal', line=dict(color='red')), row=3, col=1)
+                         fig.add_trace(go.Scatter(x=hist_data_ta.index, y=hist_data_ta[macd_signal_col], mode='lines', name='Signal', line=dict(color='red')), row=3, col=1)
                     if macd_hist_col in hist_data_ta.columns:
-                        fig.add_trace(go.Bar(x=hist_data_ta.index, y=hist_data_ta[macd_hist_col], name='Histogram', marker_color='rgba(100,100,100,0.7)'), row=3, col=1)
+                         fig.add_trace(go.Bar(x=hist_data_ta.index, y=hist_data_ta[macd_hist_col], name='Histogram', marker_color='rgba(100,100,100,0.7)'), row=3, col=1)
                     fig.add_hline(y=0, line_dash="solid", line_color="black", row=3, col=1)
                     fig.update_yaxes(title_text="MACD", row=3, col=1)
 
@@ -231,15 +230,15 @@ if analyze_button_ui and ticker_symbol_input: # 들여쓰기 레벨 0
                         return None
                     df_processed = df.iloc[:, :min(4, df.shape[1])].copy()
                     new_columns = []
-                    for col_idx, col_val in enumerate(df_processed.columns): # 인덱스와 값 모두 사용
+                    for col_idx, col_val in enumerate(df_processed.columns): 
                         if isinstance(col_val, pd.Timestamp):
                             new_columns.append(col_val.strftime('%Y'))
                         elif isinstance(col_val, str) and '-' in col_val: 
                             try:
                                 new_columns.append(pd.to_datetime(col_val).strftime('%Y'))
-                            except ValueError: # 날짜 형식이 아닌 문자열 컬럼명 처리
+                            except ValueError: 
                                 new_columns.append(str(col_val).split('-')[0]) 
-                        else: # 이미 연도만 있는 경우 또는 기타 문자열
+                        else: 
                             new_columns.append(str(col_val)) 
                     df_processed.columns = new_columns
                     return df_processed.style.format("{:,.0f}", na_rep="-")
@@ -315,16 +314,16 @@ if analyze_button_ui and ticker_symbol_input: # 들여쓰기 레벨 0
                         st.warning("PBR 정보가 유효하지 않거나 부족합니다.")
 
                 st.info("💡 위 평가는 매우 단순화된 참고용이며, 실제 투자 결정에 사용되어서는 안 됩니다. DCF, RIM 등 더 정교한 모델과 종합적인 분석이 필요합니다. 이 부분은 향후 앱 기능 확장을 통해 개선될 수 있습니다.")
-     # 이 except 블록이 위의 try 블록과 정확히 같은 들여쓰기 수준(레벨 1)에 있어야 합니다.
-     except Exception as e: 
-         st.error(f"'{ticker_symbol_input}' 데이터 처리 중 예상치 못한 오류가 발생했습니다: {str(e)}")
-         st.error("인터넷 연결을 확인하거나, 티커 심볼이 정확한지 다시 한번 확인해주세요. (예: 미국 주식 AAPL, MSFT, GOOGL)")
-         st.error("문제가 지속되면 잠시 후 다시 시도해주세요. (데이터 제공처의 일시적인 제한일 수 있습니다.)")
+        # 이 except 블록은 위의 try 블록과 정확히 같은 들여쓰기 수준 (레벨 1)에 있어야 합니다.
+        except Exception as e: 
+            st.error(f"'{ticker_symbol_input}' 데이터 처리 중 예상치 못한 오류가 발생했습니다: {str(e)}")
+            st.error("인터넷 연결을 확인하거나, 티커 심볼이 정확한지 다시 한번 확인해주세요. (예: 미국 주식 AAPL, MSFT, GOOGL)")
+            st.error("문제가 지속되면 잠시 후 다시 시도해주세요. (데이터 제공처의 일시적인 제한일 수 있습니다.)")
 
 elif analyze_button_ui and not ticker_symbol_input: # 이 elif는 맨 처음 if와 같은 들여쓰기 레벨 (레벨 0)
- st.warning("⚠️ 분석할 종목 티커를 사이드바에 입력해주세요.")
+    st.warning("⚠️ 분석할 종목 티커를 사이드바에 입력해주세요.")
 else: # 이 else도 맨 처음 if와 같은 들여쓰기 레벨 (레벨 0)
- st.info("👈 사이드바에서 분석할 미국 주식의 티커를 입력하고 '분석 시작!' 버튼을 눌러주세요. 예시 티커: AAPL, MSFT, GOOGL, NVDA, TSLA 등")
+    st.info("👈 사이드바에서 분석할 미국 주식의 티커를 입력하고 '분석 시작!' 버튼을 눌러주세요. 예시 티커: AAPL, MSFT, GOOGL, NVDA, TSLA 등")
 
 # --- 앱 정보 및 면책 조항 ---
 st.markdown("---")
